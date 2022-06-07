@@ -1,9 +1,9 @@
+/* eslint-disable no-unused-expressions */
 import * as path from 'path';
 import {ConfigVariables} from '@avanio/variable-util';
 import {expect} from 'chai';
 import 'mocha';
 import * as sinon from 'sinon';
-
 import {DockerSecretsConfigLoader, FileConfigLoader} from '../src';
 
 const debugSpy = sinon.spy();
@@ -20,47 +20,77 @@ describe('config variable', () => {
 		warnSpy.resetHistory();
 		traceSpy.resetHistory();
 	});
-	it('should return file variable value', async function () {
-		const configVar = new ConfigVariables([new FileConfigLoader({fileName: './test/testSettings.json', isSilent: false, type: 'json'})], {
-			logger: {
-				info: infoSpy,
-				debug: debugSpy,
-				error: errorSpy,
-				warn: warnSpy,
-				trace: traceSpy,
-			},
+	describe('docker secrets', () => {
+		it('should return file variable value', async function () {
+			const configVar = new ConfigVariables([new FileConfigLoader({fileName: './test/testSettings.json', type: 'json'})], {
+				logger: {
+					info: infoSpy,
+					debug: debugSpy,
+					error: errorSpy,
+					warn: warnSpy,
+					trace: traceSpy,
+				},
+			});
+			expect(await configVar.get('SETTINGS_VARIABLE1', undefined, {showValue: true})).to.be.eq('settings_file');
+			expect(infoSpy.getCall(0).args[0]).to.be.eq(`ConfigVariables[file]: SETTINGS_VARIABLE1 [settings_file] from ./test/testSettings.json`);
 		});
-		expect(await configVar.get('SETTINGS_VARIABLE1', undefined, {showValue: true})).to.be.eq('settings_file');
-		expect(infoSpy.getCall(0).args[0]).to.be.eq(`ConfigVariables[file]: SETTINGS_VARIABLE1 [settings_file] from ./test/testSettings.json`);
+		it('should return error when isSilent = false and file not exists', async function () {
+			const configVar = new ConfigVariables([new FileConfigLoader({fileName: './test/testSettings99.json', isSilent: false, type: 'json'})], {
+				logger: {
+					info: infoSpy,
+					debug: debugSpy,
+					error: errorSpy,
+					warn: warnSpy,
+					trace: traceSpy,
+				},
+			});
+			expect(await configVar.get('SETTINGS_VARIABLE1', undefined, {showValue: true})).to.be.eq(undefined);
+			expect(errorSpy.calledOnce).to.be.true;
+		});
 	});
-	it('should return docker secret value force lowercase key', async function () {
-		const configVar = new ConfigVariables([new DockerSecretsConfigLoader({path: './test', isSilent: false, fileLowerCase: true})], {
-			logger: {
-				info: infoSpy,
-				debug: debugSpy,
-				error: errorSpy,
-				warn: warnSpy,
-				trace: traceSpy,
-			},
+	describe('docker secrets', () => {
+		it('should return docker secret value force lowercase key', async function () {
+			const configVar = new ConfigVariables([new DockerSecretsConfigLoader({path: './test', fileLowerCase: true})], {
+				logger: {
+					info: infoSpy,
+					debug: debugSpy,
+					error: errorSpy,
+					warn: warnSpy,
+					trace: traceSpy,
+				},
+			});
+			expect(await configVar.get('DOCKERSECRET1', undefined, {showValue: true})).to.be.eq('docker_value');
+			expect(infoSpy.getCall(0).args[0]).to.be.eq(
+				`ConfigVariables[docker-secrets]: DOCKERSECRET1 [docker_value] from ${path.join(path.resolve('./test/'), 'dockersecret1')}`,
+			);
 		});
-		expect(await configVar.get('DOCKERSECRET1', undefined, {showValue: true})).to.be.eq('docker_value');
-		expect(infoSpy.getCall(0).args[0]).to.be.eq(
-			`ConfigVariables[docker-secrets]: DOCKERSECRET1 [docker_value] from ${path.join(path.resolve('./test/'), 'dockersecret1')}`,
-		);
-	});
-	it('should return docker secret value', async function () {
-		const configVar = new ConfigVariables([new DockerSecretsConfigLoader({path: './test', isSilent: false})], {
-			logger: {
-				info: infoSpy,
-				debug: debugSpy,
-				error: errorSpy,
-				warn: warnSpy,
-				trace: traceSpy,
-			},
+		it('should return docker secret value', async function () {
+			const configVar = new ConfigVariables([new DockerSecretsConfigLoader({path: './test'})], {
+				logger: {
+					info: infoSpy,
+					debug: debugSpy,
+					error: errorSpy,
+					warn: warnSpy,
+					trace: traceSpy,
+				},
+			});
+			expect(await configVar.get('dockersecret2', undefined, {showValue: true})).to.be.eq('docker_value');
+			expect(infoSpy.getCall(0).args[0]).to.be.eq(
+				`ConfigVariables[docker-secrets]: dockersecret2 [docker_value] from ${path.join(path.resolve('./test/'), 'dockersecret2')}`,
+			);
 		});
-		expect(await configVar.get('dockersecret2', undefined, {showValue: true})).to.be.eq('docker_value');
-		expect(infoSpy.getCall(0).args[0]).to.be.eq(
-			`ConfigVariables[docker-secrets]: dockersecret2 [docker_value] from ${path.join(path.resolve('./test/'), 'dockersecret2')}`,
-		);
+		it('should return error when isSilent = false and file not exists', async function () {
+			const configVar = new ConfigVariables([new DockerSecretsConfigLoader({path: './test', isSilent: false, fileLowerCase: true})], {
+				logger: {
+					info: infoSpy,
+					debug: debugSpy,
+					error: errorSpy,
+					warn: warnSpy,
+					trace: traceSpy,
+				},
+			});
+			expect(await configVar.get('DOCKERSECRET99', undefined, {showValue: true})).to.be.eq(undefined);
+			expect(errorSpy.calledOnce).to.be.true;
+		});
 	});
 });

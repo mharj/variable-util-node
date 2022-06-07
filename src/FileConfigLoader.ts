@@ -4,7 +4,8 @@ import {ConfigLoader, GetValue} from '@avanio/variable-util/dist/loaders';
 export interface FileConfigLoaderOptions {
 	fileName: string;
 	type: 'json';
-	isSilent?: false;
+	/** set to false if need errors */
+	isSilent?: boolean;
 }
 
 export class FileConfigLoader extends ConfigLoader {
@@ -14,7 +15,7 @@ export class FileConfigLoader extends ConfigLoader {
 
 	public constructor(options: FileConfigLoaderOptions) {
 		super();
-		this.options = options;
+		this.options = {isSilent: true, ...options};
 	}
 
 	public async reload(): Promise<void> {

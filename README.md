@@ -16,21 +16,22 @@ export const getConfigVariable = new ConfigVariables([new FileConfigLoader({file
 	logger: console,
 }).get;
 
-
 // Docker secret files
-export const getConfigVariable = new ConfigVariables([new DockerSecretsConfigLoader({isSilent: false, fileLowerCase: true}], {
+export const getConfigVariable = new ConfigVariables([new DockerSecretsConfigLoader({isSilent: false, fileLowerCase: true})], {
 	logger: console,
 }).get;
 
 // Using multiple loaders
-export const getConfigVariable = new ConfigVariables([
-    new EnvConfigLoader(),
-    new FileConfigLoader({fileName: './settings.json', isSilent: false, type: 'json'}),
-    new DockerSecretsConfigLoader({isSilent: false, fileLowerCase: true},
-], {
-	logger: console,
-}).get;
-
+export const getConfigVariable = new ConfigVariables(
+	[
+		new EnvConfigLoader(),
+		new FileConfigLoader({fileName: './settings.json', type: 'json'}),
+		new DockerSecretsConfigLoader({fileLowerCase: true}),
+	],
+	{
+		logger: console,
+	},
+).get;
 
 const databaseUri = await configVariable.get('DATABASE_URI', undefined, {sanitizeUrl: true});
 ```

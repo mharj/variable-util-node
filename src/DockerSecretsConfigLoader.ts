@@ -5,7 +5,8 @@ import {ConfigLoader, GetValue} from '@avanio/variable-util/dist/loaders';
 export interface DockerSecretsConfigLoaderOptions {
 	fileLowerCase: boolean;
 	path: string;
-	isSilent: false;
+	/** set to false if need errors */
+	isSilent: boolean;
 }
 
 export class DockerSecretsConfigLoader extends ConfigLoader {
@@ -14,7 +15,7 @@ export class DockerSecretsConfigLoader extends ConfigLoader {
 	private valuePromises: Record<string, Promise<string | undefined> | undefined> = {};
 	public constructor(options: Partial<DockerSecretsConfigLoaderOptions> = {}) {
 		super();
-		this.options = {fileLowerCase: false, path: '/run/secrets', isSilent: false, ...options};
+		this.options = {fileLowerCase: false, path: '/run/secrets', isSilent: true, ...options};
 	}
 
 	public async get(key: string): Promise<GetValue> {
