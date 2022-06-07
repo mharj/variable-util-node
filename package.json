@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "nodejs env util",
   "main": "./dist/index.js",
+  "private": false,
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run test && npm run build",
