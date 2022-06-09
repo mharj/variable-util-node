@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import {ConfigLoader, GetValue} from '@avanio/variable-util/dist/loaders';
+import {ConfigLoader, LoaderValue} from '@avanio/variable-util/dist/loaders';
 
 export interface FileConfigLoaderOptions {
 	fileName: string;
@@ -8,7 +8,7 @@ export interface FileConfigLoaderOptions {
 	isSilent?: boolean;
 }
 
-export class FileConfigLoader extends ConfigLoader {
+export class FileConfigLoader extends ConfigLoader<string | undefined> {
 	public type = 'file';
 	private options: FileConfigLoaderOptions;
 	private filePromise: Promise<Record<string, string | undefined>> | undefined;
@@ -27,12 +27,13 @@ export class FileConfigLoader extends ConfigLoader {
 		return this.filePromise !== undefined;
 	}
 
-	public async get(key: string): Promise<GetValue> {
+	protected async handleLoader(rootKey: string, key?: string): Promise<LoaderValue> {
 		if (!this.filePromise) {
 			this.filePromise = this.loadFile();
 		}
 		const data = await this.filePromise;
-		return {value: data[key], path: this.options.fileName};
+		const targetKey = key || rootKey;
+		return {value: data[targetKey], path: this.options.fileName};
 	}
 
 	private async loadFile(): Promise<Record<string, string | undefined>> {

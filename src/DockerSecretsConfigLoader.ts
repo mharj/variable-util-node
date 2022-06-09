@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {ConfigLoader, GetValue} from '@avanio/variable-util/dist/loaders';
+import {ConfigLoader, LoaderValue} from '@avanio/variable-util/dist/loaders';
 
 export interface DockerSecretsConfigLoaderOptions {
 	fileLowerCase: boolean;
@@ -9,7 +9,7 @@ export interface DockerSecretsConfigLoaderOptions {
 	isSilent: boolean;
 }
 
-export class DockerSecretsConfigLoader extends ConfigLoader {
+export class DockerSecretsConfigLoader extends ConfigLoader<string | undefined> {
 	public type = 'docker-secrets';
 	private options: DockerSecretsConfigLoaderOptions;
 	private valuePromises: Record<string, Promise<string | undefined> | undefined> = {};
@@ -18,19 +18,20 @@ export class DockerSecretsConfigLoader extends ConfigLoader {
 		this.options = {fileLowerCase: false, path: '/run/secrets', isSilent: true, ...options};
 	}
 
-	public async get(key: string): Promise<GetValue> {
-		const filePath = this.filePath(key);
-		if (!this.valuePromises[key]) {
+	protected async handleLoader(rootKey: string, key?: string): Promise<LoaderValue> {
+		const targetKey = key || rootKey;
+		const filePath = this.filePath(targetKey);
+		if (!this.valuePromises[targetKey]) {
 			if (!fs.existsSync(filePath)) {
 				if (!this.options.isSilent) {
 					throw new Error(`ConfigVariables[docker-secrets]: ${key} from ${filePath} not found`);
 				}
-				this.valuePromises[key] = Promise.resolve(undefined);
+				this.valuePromises[targetKey] = Promise.resolve(undefined);
 			} else {
-				this.valuePromises[key] = fs.promises.readFile(filePath, 'utf8');
+				this.valuePromises[targetKey] = fs.promises.readFile(filePath, 'utf8');
 			}
 		}
-		const value = await this.valuePromises[key];
+		const value = await this.valuePromises[targetKey];
 		return {value, path: filePath};
 	}
 

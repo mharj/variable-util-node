@@ -11,27 +11,15 @@ npm i @avanio/variable-util @avanio/variable-util-node --save
 ### Examples
 
 ```typescript
-// JSON (flat) settings file
-export const getConfigVariable = new ConfigVariables([new FileConfigLoader({fileName: './settings.json', isSilent: false, type: 'json'})], {
-	logger: console,
-}).get;
-
+setLogger(console); // or log4js or winston
 // Docker secret files
-export const getConfigVariable = new ConfigVariables([new DockerSecretsConfigLoader({isSilent: false, fileLowerCase: true})], {
-	logger: console,
-}).get;
+const dockerEnv = new DockerSecretsConfigLoader({fileLowerCase: true}).getLoader;
+// settings json file (i.e. modified on pipeline or agent)
+const fileEnv = new FileConfigLoader({fileName: './settings.json', type: 'json'}).getLoader;
 
-// Using multiple loaders
-export const getConfigVariable = new ConfigVariables(
-	[
-		new EnvConfigLoader(),
-		new FileConfigLoader({fileName: './settings.json', type: 'json'}),
-		new DockerSecretsConfigLoader({fileLowerCase: true}),
-	],
-	{
-		logger: console,
-	},
-).get;
+// lookup from: env => JSON file "settings.json" => Docker "/run/secrets/database_uri"
+const databaseUrl = await getConfigVariable('DATABASE_URI', [env(), fileEnv(), dockerEnv()], undefined, {sanitizeUrl: true});
 
-const databaseUri = await configVariable.get('DATABASE_URI', undefined, {sanitizeUrl: true});
+// example override key: env => JSON file "settings.json" => Docker "/run/secrets/xxyyzz-database"
+const databaseUrl = await getConfigVariable('DATABASE_URI', [env(), fileEnv(), dockerEnv('xxyyzz-database')], undefined, {sanitizeUrl: true});
 ```
