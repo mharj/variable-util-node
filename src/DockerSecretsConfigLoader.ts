@@ -1,12 +1,14 @@
-import * as fs from 'fs';
+import {existsSync} from 'fs';
+import {readFile} from 'fs/promises';
 import * as path from 'path';
-import {ConfigLoader, LoaderValue} from '@avanio/variable-util/dist/loaders';
+import {ConfigLoader, LoaderValue, VariableLookupError, ILoggerLike} from '@avanio/variable-util/';
 
 export interface DockerSecretsConfigLoaderOptions {
 	fileLowerCase: boolean;
 	path: string;
 	/** set to false if need errors */
 	isSilent: boolean;
+	logger?: ILoggerLike;
 }
 
 export class DockerSecretsConfigLoader extends ConfigLoader<string | undefined> {
@@ -15,20 +17,22 @@ export class DockerSecretsConfigLoader extends ConfigLoader<string | undefined> 
 	private valuePromises: Record<string, Promise<string | undefined> | undefined> = {};
 	public constructor(options: Partial<DockerSecretsConfigLoaderOptions> = {}) {
 		super();
-		this.options = {fileLowerCase: false, path: '/run/secrets', isSilent: true, ...options};
+		this.options = {fileLowerCase: false, isSilent: true, path: '/run/secrets', ...options};
+		this.getLoader = this.getLoader.bind(this);
 	}
 
-	protected async handleLoader(rootKey: string, key?: string): Promise<LoaderValue> {
-		const targetKey = key || rootKey;
+	protected async handleLoader(lookupKey: string, overrideKey?: string): Promise<LoaderValue> {
+		const targetKey = overrideKey || lookupKey;
 		const filePath = this.filePath(targetKey);
 		if (!this.valuePromises[targetKey]) {
-			if (!fs.existsSync(filePath)) {
+			if (!existsSync(filePath)) {
 				if (!this.options.isSilent) {
-					throw new Error(`ConfigVariables[docker-secrets]: ${key} from ${filePath} not found`);
+					throw new VariableLookupError(targetKey, `ConfigVariables[${this.type}]: ${lookupKey} from ${filePath} not found`);
 				}
+				this.options.logger?.debug(`ConfigVariables[${this.type}]: ${lookupKey} from ${filePath} not found`);
 				this.valuePromises[targetKey] = Promise.resolve(undefined);
 			} else {
-				this.valuePromises[targetKey] = fs.promises.readFile(filePath, 'utf8');
+				this.valuePromises[targetKey] = readFile(filePath, 'utf8');
 			}
 		}
 		const value = await this.valuePromises[targetKey];

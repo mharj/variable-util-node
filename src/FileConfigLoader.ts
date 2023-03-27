@@ -1,11 +1,13 @@
-import * as fs from 'fs';
-import {ConfigLoader, LoaderValue} from '@avanio/variable-util/dist/loaders';
+import {existsSync} from 'fs';
+import {readFile} from 'fs/promises';
+import {ConfigLoader, LoaderValue, VariableError, ILoggerLike} from '@avanio/variable-util/';
 
 export interface FileConfigLoaderOptions {
 	fileName: string;
 	type: 'json';
 	/** set to false if need errors */
 	isSilent?: boolean;
+	logger?: ILoggerLike;
 }
 
 export class FileConfigLoader extends ConfigLoader<string | undefined> {
@@ -16,6 +18,7 @@ export class FileConfigLoader extends ConfigLoader<string | undefined> {
 	public constructor(options: FileConfigLoaderOptions) {
 		super();
 		this.options = {isSilent: true, ...options};
+		this.getLoader = this.getLoader.bind(this);
 	}
 
 	public async reload(): Promise<void> {
@@ -37,12 +40,21 @@ export class FileConfigLoader extends ConfigLoader<string | undefined> {
 	}
 
 	private async loadFile(): Promise<Record<string, string | undefined>> {
-		if (!fs.existsSync(this.options.fileName)) {
+		if (!existsSync(this.options.fileName)) {
 			if (this.options.isSilent) {
+				this.options.logger?.debug(`ConfigVariables[file]: file ${this.options.fileName} not found`);
 				return {};
 			}
-			throw new Error(`ConfigVariables[file]: file ${this.options.fileName} not found`);
+			throw new VariableError(`ConfigVariables[file]: file ${this.options.fileName} not found`);
 		}
-		return JSON.parse(await fs.promises.readFile(this.options.fileName, 'utf8'));
+		try {
+			return JSON.parse(await readFile(this.options.fileName, 'utf8'));
+		} catch (err) {
+			if (this.options.isSilent) {
+				this.options.logger?.info(`ConfigVariables[file]: file ${this.options.fileName} is not a valid JSON`);
+				return {};
+			}
+			throw new VariableError(`ConfigVariables[file]: file ${this.options.fileName} is not a valid JSON`);
+		}
 	}
 }

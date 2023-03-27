@@ -1,8 +1,9 @@
 {
     "compilerOptions": {
         "lib": [
-            "es2018",
-            "dom"
+            "es2021",
+            "dom",
+            "dom.iterable"
         ],
         "module": "commonjs",
         "target": "es5",
@@ -23,7 +24,6 @@
         "noImplicitAny": true,
         "importHelpers": false,
         "strictNullChecks": true,
-        "suppressImplicitAnyIndexErrors": true,
         "noUnusedLocals": true,
         "strict": true,
     },
